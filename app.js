@@ -2,12 +2,17 @@ const express = require("express"),
   app = express(),
   bodyParser = require("body-parser"),
   mongoose = require("mongoose"),
+  passport = require("passport"),
+  LocalStrategy = require("passport-local"),
   Camground = require("./models/campground"),
   Comment = require("./models/comment"),
+  // require User Model
+  User = require("./models/user"),
   seedDB = require("./seed");
 
 //seedDB();
 
+// connect to DB
 mongoose.connect("mongodb://localhost:27017/yelp_camp", {
   useNewUrlParser: true,
   useUnifiedTopology: true
@@ -17,6 +22,37 @@ app.set("view engine", "ejs");
 // use css
 app.use(express.static(__dirname + "/public"));
 
+//=======================
+// Passport Config
+//=======================
+app.use(
+  require("express-session")({
+    secret: "any English words",
+    resave: false,
+    saveUninitialized: false
+  })
+);
+app.use(passport.initialize());
+app.use(passport.session());
+// User.authenticate是plm的方法，plm把login的user的密码加密了，所以
+// 有了这个，post login的passport.authenticate才好用，不然报错！！！！！！
+passport.use(new LocalStrategy(User.authenticate()));
+// serialize user & deserialize user是plm的方法
+// it's responsible for reading and taking the data from
+// the session that's encode it and unecode it
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
+
+// 顺序很重要：必须要在passport配置的后面
+app.use((req, res, next) => {
+  res.locals.currentUser = req.user;
+  console.log(req.user);
+  next();
+});
+
+//=======================
+//    Routes
+//=======================
 app.get("/", (req, res) => {
   res.render("landing");
 });
@@ -75,7 +111,7 @@ app.get("/campgrounds/:id", (req, res) => {
 //=========================
 //  comments routes: new
 //=========================
-app.get("/campgrounds/:id/comments/new", (req, res) => {
+app.get("/campgrounds/:id/comments/new", isLoggedin, (req, res) => {
   // find campground by id
   Camground.findById(req.params.id, (err, campground) => {
     if (err) {
@@ -89,7 +125,7 @@ app.get("/campgrounds/:id/comments/new", (req, res) => {
 //=========================
 //  comments routes: create comment
 //=========================
-app.post("/campgrounds/:id/comments", (req, res) => {
+app.post("/campgrounds/:id/comments", isLoggedin, (req, res) => {
   //1. lookup campground using ID
   Camground.findById(req.params.id, (err, campground) => {
     if (err) {
@@ -112,6 +148,72 @@ app.post("/campgrounds/:id/comments", (req, res) => {
   });
 });
 
+//=======================
+//  Auth Routes
+//=======================
+//=======================
+//  Register Get Route
+//=======================
+app.get("/register", (req, res) => {
+  res.render("register");
+});
+//=======================
+//  Register Post Route
+//=======================
+app.post("/register", (req, res) => {
+  const { username, password } = req.body;
+  // User.register是plm的方法，第一个参数放一个user object，第二个参数放密码，plm自己加密它，第三个参数是callback，返回一个user里面是用户名和为用户加密的密码
+  User.register(new User({ username: username }), password, (err, user) => {
+    if (err) {
+      console.log(err);
+      return res.render("register");
+    }
+    // plm的方法，注册成功之后重定向
+    passport.authenticate("local")(req, res, () => {
+      res.redirect("/campgrounds");
+    });
+  });
+});
+
+//=======================
+//  Login Get Route
+//=======================
+app.get("/login", (req, res) => {
+  res.render("login");
+});
+
+//=======================
+//  Login Post Route
+//=======================
+app.post(
+  "/login",
+  // 这是middleware
+  passport.authenticate("local", {
+    successRedirect: "/campgrounds",
+    failureRedirect: "/login"
+  }),
+  (req, res) => {}
+);
+
+//=======================
+//  Logout Get Route
+//=======================
+app.get("/logout", (req, res) => {
+  req.logout();
+  res.redirect("/campgrounds");
+});
+
+//=======================
+//    Middleware
+//=======================
+// isLogin 判断是否login
+function isLoggedin(req, res, next) {
+  //req.isAuthenticated是passport提供的方法
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.redirect("/login");
+}
 app.listen(process.env.PORT || 3000, () => {
   console.log("The YelpCamp Server Has Started!");
 });
