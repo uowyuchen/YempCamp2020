@@ -48,7 +48,6 @@ passport.deserializeUser(User.deserializeUser());
 // 顺序很重要：必须要在passport配置的后面
 app.use((req, res, next) => {
   res.locals.currentUser = req.user;
-  console.log(req.user);
   next();
 });
 
