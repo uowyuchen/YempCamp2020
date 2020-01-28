@@ -20,26 +20,32 @@ router.get("/", (req, res) => {
 });
 
 // Create - add new campground to DB
-router.post("/", (req, res) => {
-  // get data from form and add to campgrounds array
+router.post("/", isLoggedin, (req, res) => {
+  // 1. get data from form and add to campgrounds array
   const name = req.body.name;
   const image = req.body.image;
   const description = req.body.description;
 
-  const newCampgrounds = { name, image, description };
-  // Create a new campground and save to DB
+  // 4. get the author who creates this campground
+  var author = {
+    id: req.user.id,
+    username: req.user.username
+  };
+  // 5. author就是把谁create的campground这个人加入此campground
+  const newCampgrounds = { name, image, description, author };
+  // 2. Create a new campground and save to DB
   Camground.create(newCampgrounds, (err, newCampground) => {
     if (err) {
       console.log(err);
     } else {
-      // redirect back to campgrounds page
+      // 3. redirect back to campgrounds page
       res.redirect("/campgrounds");
     }
   });
 });
 
 // New - show form to create new campground
-router.get("/new", (req, res) => {
+router.get("/new", isLoggedin, (req, res) => {
   res.render("campgrounds/new");
 });
 
@@ -57,5 +63,15 @@ router.get("/:id", (req, res) => {
       }
     });
 });
-
+//=======================
+//    Middleware
+//=======================
+// isLogin 判断是否login
+function isLoggedin(req, res, next) {
+  //req.isAuthenticated是passport提供的方法
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.redirect("/login");
+}
 module.exports = router;
