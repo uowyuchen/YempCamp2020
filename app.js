@@ -5,6 +5,7 @@ const express = require("express"),
   passport = require("passport"),
   methodOverride = require("method-override"),
   LocalStrategy = require("passport-local"),
+  flash = require("connect-flash"),
   // require User Model
   User = require("./models/user"),
   seedDB = require("./seed");
@@ -25,6 +26,7 @@ app.set("view engine", "ejs");
 // use css
 app.use(express.static(__dirname + "/public"));
 app.use(methodOverride("_method"));
+app.use(flash());
 
 //=======================
 // Passport Config
@@ -50,6 +52,8 @@ passport.deserializeUser(User.deserializeUser());
 // 顺序很重要：必须要在passport配置的后面
 app.use((req, res, next) => {
   res.locals.currentUser = req.user;
+  res.locals.error = req.flash("error");
+  res.locals.success = req.flash("success");
   next();
 });
 

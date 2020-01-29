@@ -25,6 +25,7 @@ router.post("/", middleware.isLoggedin, (req, res) => {
   const name = req.body.name;
   const image = req.body.image;
   const description = req.body.description;
+  const price = req.body.price;
 
   // 4. get the author who creates this campground
   var author = {
@@ -32,7 +33,7 @@ router.post("/", middleware.isLoggedin, (req, res) => {
     username: req.user.username
   };
   // 5. author就是把谁create的campground这个人加入此campground
-  const newCampgrounds = { name, image, description, author };
+  const newCampgrounds = { name, image, description, author, price };
   // 2. Create a new campground and save to DB
   Camground.create(newCampgrounds, (err, newCampground) => {
     if (err) {
@@ -55,8 +56,9 @@ router.get("/:id", (req, res) => {
   Camground.findById(req.params.id)
     .populate("comments")
     .exec((err, foundCampground) => {
-      if (err) {
-        console.log(err);
+      if (err || !foundCampground) {
+        req.flash("error", "Campground not found");
+        res.redirect("back");
       } else {
         // render show template with that campground
         res.render("campgrounds/show", { campground: foundCampground });

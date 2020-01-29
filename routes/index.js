@@ -20,11 +20,12 @@ router.post("/register", (req, res) => {
   // User.register是plm的方法，第一个参数放一个user object，第二个参数放密码，plm自己加密它，第三个参数是callback，返回一个user里面是用户名和为用户加密的密码
   User.register(new User({ username: username }), password, (err, user) => {
     if (err) {
-      console.log(err);
+      req.flash("error", err.message);
       return res.render("register");
     }
     // plm的方法，注册成功之后重定向
     passport.authenticate("local")(req, res, () => {
+      req.flash("success", "Welcome to YelpCamp " + user.username);
       res.redirect("/campgrounds");
     });
   });
@@ -55,6 +56,8 @@ router.post(
 //=======================
 router.get("/logout", (req, res) => {
   req.logout();
+  // flash
+  req.flash("success", "Logged you out!");
   res.redirect("/campgrounds");
 });
 
