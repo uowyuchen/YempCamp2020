@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Camground = require("../models/campground");
-const Comment = require("../models/comment");
+const middleware = require("../middleware");
 
 //=======================
 //  Campgrounds Routes
@@ -20,7 +20,7 @@ router.get("/", (req, res) => {
 });
 
 // Create - add new campground to DB
-router.post("/", isLoggedin, (req, res) => {
+router.post("/", middleware.isLoggedin, (req, res) => {
   // 1. get data from form and add to campgrounds array
   const name = req.body.name;
   const image = req.body.image;
@@ -45,7 +45,7 @@ router.post("/", isLoggedin, (req, res) => {
 });
 
 // New - show form to create new campground
-router.get("/new", isLoggedin, (req, res) => {
+router.get("/new", middleware.isLoggedin, (req, res) => {
   res.render("campgrounds/new");
 });
 
@@ -63,15 +63,40 @@ router.get("/:id", (req, res) => {
       }
     });
 });
-//=======================
-//    Middleware
-//=======================
-// isLogin 判断是否login
-function isLoggedin(req, res, next) {
-  //req.isAuthenticated是passport提供的方法
-  if (req.isAuthenticated()) {
-    return next();
-  }
-  res.redirect("/login");
-}
+
+// Edit Campground Route
+router.get("/:id/edit", middleware.checkCampgroundOwnership, (req, res) => {
+  Camground.findById(req.params.id, (err, foundCampground) => {
+    res.render("campgrounds/edit", { campground: foundCampground });
+  });
+});
+
+// Update Campground Route
+router.put("/:id", middleware.checkCampgroundOwnership, (req, res) => {
+  // 1. find and update the correct campground
+  Camground.findByIdAndUpdate(
+    req.params.id,
+    req.body.campground,
+    (err, updatedCampground) => {
+      if (err) {
+        res.redirect("/campgrounds");
+      } else {
+        // 2. redirect
+        res.redirect(`/campgrounds/${req.params.id}`);
+      }
+    }
+  );
+});
+
+// Destroy campground route
+router.delete("/:id", middleware.checkCampgroundOwnership, (req, res) => {
+  Camground.findByIdAndRemove(req.params.id, err => {
+    if (err) {
+      res.redirect("/campgrounds");
+    } else {
+      res.redirect("/campgrounds");
+    }
+  });
+});
+
 module.exports = router;

@@ -3,6 +3,7 @@ const express = require("express"),
   bodyParser = require("body-parser"),
   mongoose = require("mongoose"),
   passport = require("passport"),
+  methodOverride = require("method-override"),
   LocalStrategy = require("passport-local"),
   // require User Model
   User = require("./models/user"),
@@ -23,6 +24,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
 // use css
 app.use(express.static(__dirname + "/public"));
+app.use(methodOverride("_method"));
 
 //=======================
 // Passport Config
