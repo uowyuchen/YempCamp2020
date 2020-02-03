@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router({ mergeParams: true });
-const Camground = require("../models/campground");
+const Campground = require("../models/campground");
 const Comment = require("../models/comment");
 const middleware = require("../middleware");
 
@@ -9,7 +9,7 @@ const middleware = require("../middleware");
 //=========================
 router.get("/new", middleware.isLoggedin, (req, res) => {
   // find camxpground by id
-  Camground.findById(req.params.id, (err, campground) => {
+  Campground.findById(req.params.id, (err, campground) => {
     if (err) {
       console.log(err);
     } else {
@@ -23,7 +23,7 @@ router.get("/new", middleware.isLoggedin, (req, res) => {
 //=========================
 router.post("/", middleware.isLoggedin, (req, res) => {
   //1. lookup campground using ID
-  Camground.findById(req.params.id, (err, campground) => {
+  Campground.findById(req.params.id, (err, campground) => {
     if (err) {
       console.log(err);
       res.redirect("/campgrounds");
@@ -55,7 +55,7 @@ router.post("/", middleware.isLoggedin, (req, res) => {
 //  comments routes: edit comment
 //=========================
 router.get("/:commentId/edit", middleware.checkCommentOwnership, (req, res) => {
-  Camground.findById(req.params.id, (err, foundCampground) => {
+  Campground.findById(req.params.id, (err, foundCampground) => {
     if (err || !foundCampground) {
       req.flash("error", "No Campground Found");
       return res.redirect("back");

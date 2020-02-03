@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express"),
   app = express(),
   bodyParser = require("body-parser"),
@@ -10,8 +11,12 @@ const express = require("express"),
   User = require("./models/user"),
   seedDB = require("./seed");
 
+//require moment
+app.locals.moment = require("moment");
+
 const campgroundRoutes = require("./routes/campgrounds"),
   commentRoutes = require("./routes/comments"),
+  reviewRoutes = require("./routes/reviews"),
   indexRoutes = require("./routes");
 
 //seedDB();
@@ -21,6 +26,8 @@ mongoose.connect("mongodb://localhost:27017/yelp_camp", {
   useNewUrlParser: true,
   useUnifiedTopology: true
 });
+mongoose.set("useCreateIndex", true);
+
 app.use(bodyParser.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
 // use css
@@ -50,10 +57,27 @@ passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
 // 顺序很重要：必须要在passport配置的后面
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
   res.locals.currentUser = req.user;
+
+  // 如果user login了
+  if (req.user) {
+    try {
+      // 等，直到找到当前user的notification
+      let foundUser = await User.findById(req.user.id)
+        .populate({ path: "notifications", match: { isRead: false } })
+        .exec();
+      // 把当前登录的user的没读的notifications放到全局变量中
+      res.locals.notifications = foundUser.notifications.reverse();
+    } catch (err) {
+      console.log(err.message);
+    }
+  }
+
+  // flash message
   res.locals.error = req.flash("error");
   res.locals.success = req.flash("success");
+
   next();
 });
 
@@ -63,6 +87,7 @@ app.use((req, res, next) => {
 app.use("/", indexRoutes);
 app.use("/campgrounds", campgroundRoutes);
 app.use("/campgrounds/:id/comments", commentRoutes);
+app.use("/campgrounds/:id/reviews", reviewRoutes);
 
 app.listen(process.env.PORT || 3000, () => {
   console.log("The YelpCamp Server Has Started!");

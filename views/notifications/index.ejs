@@ -1,0 +1,23 @@
+<%- include("../partials/header") %>
+
+<h1 class="text-center">Notifications</h1>
+
+<% allNotifications.forEach(function(notification) { %>
+  <div class="row">
+    <div class="col-lg-6 col-lg-offset-3">
+      <div class="panel panel-default">
+        <div class="panel-body">
+          <strong class="mr-auto"><%= notification.username %></strong>
+          <small><%= moment(notification.createdAt).fromNow() %>></small>
+        </div>
+        <div class="panel-footer"><a href="/campgrounds/<%= notification.campgroundId %>">
+          <%= notification.username %> created a new campground %>
+        </a></div>
+      </div>
+    </div>  
+    
+  </div>
+
+<% }); %>
+
+<%- include("../partials/footer") %>
